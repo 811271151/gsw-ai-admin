@@ -1,0 +1,22 @@
+{
+  "name": "@gsw-ai-admin/api",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@gsw-ai-admin/auth": "workspace:*",
+    "@gsw-ai-admin/db": "workspace:*",
+    "@trpc/client": "catalog:",
+    "@trpc/server": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@gsw-ai-admin/config": "workspace:*",
+    "typescript": "^6.0.3"
+  }
+}

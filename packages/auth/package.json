@@ -1,0 +1,21 @@
+{
+  "name": "@gsw-ai-admin/auth",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@better-auth/expo": "catalog:",
+    "@gsw-ai-admin/db": "workspace:*",
+    "better-auth": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@gsw-ai-admin/config": "workspace:*",
+    "typescript": "^6.0.3"
+  }
+}
