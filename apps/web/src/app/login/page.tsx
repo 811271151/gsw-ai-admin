@@ -1,14 +1,22 @@
-"use client";
-
-import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { redirect } from "next/navigation";
 
 import SignInForm from "@/components/sign-in-form";
+import { getSafeRedirect } from "@/lib/safe-redirect";
+import { getServerSession } from "@/lib/server-session";
 
-// 注册已拆到 /register；本页的完整改造（用户名登录、记住我、redirect）在 T-03
-export default function LoginPage() {
-	const router = useRouter();
-	const goToRegister = useCallback(() => router.push("/register"), [router]);
+export default async function LoginPage({
+	searchParams,
+}: {
+	searchParams: Promise<{ redirect?: string | string[] }>;
+}) {
+	const { redirect: redirectParam } = await searchParams;
+	const redirectTo = getSafeRedirect(
+		Array.isArray(redirectParam) ? redirectParam[0] : redirectParam
+	);
 
-	return <SignInForm onSwitchToSignUp={goToRegister} />;
+	if (await getServerSession()) {
+		redirect(redirectTo);
+	}
+
+	return <SignInForm redirectTo={redirectTo} />;
 }

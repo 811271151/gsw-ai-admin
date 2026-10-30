@@ -1,5 +1,6 @@
 "use client";
 
+import { Checkbox } from "@gsw-ai-admin/ui/components/checkbox";
 import { Input } from "@gsw-ai-admin/ui/components/input";
 import { Label } from "@gsw-ai-admin/ui/components/label";
 import { useCallback } from "react";
@@ -89,6 +90,32 @@ export default function FormField({
 					))}
 				</div>
 			) : null}
+		</div>
+	);
+}
+
+interface CheckboxFieldProps {
+	checked: boolean;
+	label: string;
+	name: string;
+	onChange: (checked: boolean) => void;
+}
+
+export function CheckboxField({
+	checked,
+	label,
+	name,
+	onChange,
+}: CheckboxFieldProps) {
+	return (
+		<div className="flex items-center gap-2">
+			<Checkbox
+				checked={checked}
+				id={name}
+				name={name}
+				onCheckedChange={onChange}
+			/>
+			<Label htmlFor={name}>{label}</Label>
 		</div>
 	);
 }

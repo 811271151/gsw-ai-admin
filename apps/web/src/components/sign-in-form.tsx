@@ -4,35 +4,39 @@ import { getAuthErrorMessage, signInSchema } from "@gsw-ai-admin/auth/schemas";
 import { Button } from "@gsw-ai-admin/ui/components/button";
 import { useForm } from "@tanstack/react-form";
 import { Loader2 } from "lucide-react";
+import type { Route } from "next";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { authClient } from "@/lib/auth-client";
 
-import FormField from "./form-field";
+import FormField, { CheckboxField } from "./form-field";
 
 const SIGN_IN_FAILED = "登录失败，请稍后重试";
+
+// 记住我只是 Web 端的选项，共享 schema 不带它
+const webSignInSchema = signInSchema.extend({ rememberMe: z.boolean() });
 
 const selectIsSubmitting = (state: { isSubmitting: boolean }) =>
 	state.isSubmitting;
 
-export default function SignInForm({
-	onSwitchToSignUp,
-}: {
-	onSwitchToSignUp: () => void;
-}) {
+export default function SignInForm({ redirectTo }: { redirectTo: Route }) {
 	const router = useRouter();
 
 	const form = useForm({
 		defaultValues: {
 			password: "",
+			rememberMe: false,
 			username: "",
 		},
 		onSubmit: async ({ value }) => {
 			try {
 				const { error } = await authClient.signIn.username({
 					password: value.password,
+					rememberMe: value.rememberMe,
 					username: value.username.trim(),
 				});
 				if (error) {
@@ -40,13 +44,15 @@ export default function SignInForm({
 					return;
 				}
 				toast.success("登录成功");
-				router.push("/dashboard");
+				// redirectTo 由 /login 页在服务端经 getSafeRedirect 得到，只会是站内路径
+				router.push(redirectTo);
+				router.refresh();
 			} catch {
 				toast.error(SIGN_IN_FAILED);
 			}
 		},
 		validators: {
-			onSubmit: signInSchema,
+			onSubmit: webSignInSchema,
 		},
 	});
 
@@ -95,6 +101,17 @@ export default function SignInForm({
 					)}
 				</form.Field>
 
+				<form.Field name="rememberMe">
+					{(field) => (
+						<CheckboxField
+							checked={field.state.value}
+							label="记住我"
+							name={field.name}
+							onChange={field.handleChange}
+						/>
+					)}
+				</form.Field>
+
 				<form.Subscribe selector={selectIsSubmitting}>
 					{(isSubmitting) => (
 						<Button className="w-full" disabled={isSubmitting} type="submit">
@@ -111,11 +128,12 @@ export default function SignInForm({
 				</form.Subscribe>
 			</form>
 
-			<div className="mt-4 text-center">
-				<Button onClick={onSwitchToSignUp} variant="link">
-					还没有账户？立即注册
-				</Button>
-			</div>
+			<p className="mt-4 text-center text-sm">
+				还没有账户？
+				<Link className="underline underline-offset-4" href="/register">
+					立即注册
+				</Link>
+			</p>
 		</div>
 	);
 }
