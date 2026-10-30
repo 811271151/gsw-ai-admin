@@ -37,3 +37,28 @@
 ### 结论
 
 通过（14/14，AC-15~17 待后续批次）
+
+---
+
+## 批次 2：T-03（2026-10-30）
+
+### 套件结果
+
+- 单元测试：项目尚未配置测试脚本（Vitest 由 T-04 引入，T-05 补正式用例）
+- 构建验证：✅ `packages/auth`、`apps/server` 的 `tsc --noEmit` 通过；`biome check packages/auth/src` 0 错误
+
+### AC 对账
+
+验证方式：用 `tsx` 临时脚本导入 `packages/auth/src/schemas.ts`，调用 `safeParse` 检查结果，脚本运行后已删除。
+
+| AC | 描述 | 结果 | 依据 |
+|----|------|------|------|
+| AC-15 | 两次密码不一致 | ✅ | issue path=`confirmPassword`，message=「两次输入的密码不一致」 |
+| AC-16 | 邮箱选填与格式 | ✅ | `""` 通过；`abc` →「请输入有效的邮箱地址」；`x@USERS.local` →「该邮箱域名不可用」；`bob@x.com` 通过 |
+| AC-17 | 占位邮箱 | ✅ | `toPlaceholderEmail("Alice")` = `alice@users.local` |
+
+附加检查：用户名 `a-b` →「用户名只能包含字母、数字和下划线」；`signInSchema` 空用户名、空密码分别报「请输入用户名」「请输入密码」；`getAuthErrorMessage` 对已知错误码返回中文提示，对未知错误码或空错误码返回调用方传入的默认文案。
+
+### 结论
+
+通过（3/3）

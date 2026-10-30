@@ -359,3 +359,10 @@ Biome 会自动捕获大多数机械问题。将注意力集中在：
 
 **新依赖**
 - 无（`better-auth/plugins` 随 better-auth 安装）
+
+### 01-username-auth-core（批次 T-03）— 2026-10-30
+
+**约定**
+- 注册、登录表单统一用 `@gsw-ai-admin/auth/schemas` 的 `signUpSchema` / `signInSchema`，Web 和移动端都不要另写校验规则
+- 认证接口返回的错误码统一用 `getAuthErrorMessage(error.code, 默认文案)` 转成中文；遇到新的错误码就加进 `AUTH_ERROR_MESSAGES`，不在组件里写死
+- 注册请求的 email 取 `value.email.trim() || toPlaceholderEmail(value.username)`；`@users.local` 域名只给占位邮箱用，`signUpSchema` 会拒绝用户手填这个域名

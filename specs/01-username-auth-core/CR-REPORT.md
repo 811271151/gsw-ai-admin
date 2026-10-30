@@ -33,6 +33,20 @@
 
 剩余 P0/P1: 0 ✅
 
-## 最终结论
+## 结论（批次 T-01、T-02）
 
-通过（2 轮）
+通过（2 轮。工作流在批次 2 之前改为「每批只送审 1 轮」，本批次按旧规则执行）
+
+---
+
+## 批次 T-03 · Codex 意见（2026-10-30）
+
+范围：working tree（仅 `packages/auth/src/schemas.ts`）
+
+P0 x0 / P1 x0 / P2 x0。Codex 结论：静态审查未发现需要修复的明确缺陷。
+
+Codex 在沙箱里没能完成运行时验证和类型检查。Claude 在本机执行 `packages/auth`、`apps/server` 的 `tsc --noEmit`，结果通过；`biome check packages/auth/src` 0 错误。
+
+## 结论（批次 T-03）
+
+P0/P1 已全部修复（本批次无 P0/P1）
