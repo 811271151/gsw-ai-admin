@@ -1,27 +1,22 @@
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { authClient } from "@/lib/auth-client";
+import { getDisplayName } from "@/lib/display-name";
+import { getServerSession } from "@/lib/server-session";
 
 import Dashboard from "./dashboard";
 
 export default async function DashboardPage() {
-  const session = await authClient.getSession({
-    fetchOptions: {
-      headers: await headers(),
-      throw: true,
-    },
-  });
+	const session = await getServerSession();
 
-  if (!session?.user) {
-    redirect("/login");
-  }
+	if (!session) {
+		redirect("/login?redirect=%2Fdashboard");
+	}
 
-  return (
-    <div>
-      <h1>Dashboard</h1>
-      <p>Welcome {session.user.name}</p>
-      <Dashboard session={session} />
-    </div>
-  );
+	return (
+		<div>
+			<h1>仪表板</h1>
+			<p>欢迎，{getDisplayName(session.user)}</p>
+			<Dashboard />
+		</div>
+	);
 }

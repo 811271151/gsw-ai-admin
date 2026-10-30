@@ -63,3 +63,19 @@ P0 x0 / P1 x1 / P2 x0
 ## 结论（批次 T-03）
 
 P0/P1 已全部修复（P1 x1 已修复）
+
+---
+
+## 批次 T-04 · Codex 意见（2026-10-31）
+
+范围：working tree，包括 `app/dashboard/page.tsx`、`app/dashboard/dashboard.tsx`、`components/user-menu.tsx`、`lib/display-name.ts`（新增）
+
+P0 x0 / P1 x0 / P2 x0。Codex 结论：未发现可修复的回归问题。
+
+送审前 Claude 自查发现并修复了一个安全问题（不是 Codex 提的）：
+- 原来的 `<Dashboard session={session} />` 把整个 session 对象从 Server Component 传给了客户端组件。这个 prop 会被序列化进 HTML 的 RSC payload，里面有 **httpOnly 的会话 token** 和占位邮箱。这等于把 token 暴露给页面脚本，一旦出现 XSS 就能被直接偷走。AC-14 冒烟测试失败时发现了这个问题
+- `Dashboard` 根本没用这个 prop，所以直接删掉了。修复后验证：HTML 里找不到会话 token，也找不到 `users.local`
+
+## 结论（批次 T-04）
+
+P0/P1 已全部修复（本批次 Codex 无 P0/P1；另修复 1 个会话 token 泄露问题）

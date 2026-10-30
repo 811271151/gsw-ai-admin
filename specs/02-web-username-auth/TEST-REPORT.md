@@ -79,3 +79,27 @@ AC-10（未登录访问 `/dashboard` 时带上 redirect）属于 T-04。
 ### 结论
 
 通过（冒烟 16/16、helper 27/27；AC-07/09/11/12 ✅，AC-06/08 的浏览器部分由 T-05 E2E 验收）
+
+---
+
+## 批次 4：T-04（2026-10-31）
+
+### 套件结果
+
+- 构建验证：✅ `next build`、`tsc --noEmit`、`biome check` 通过
+- 运行验证：`next start -p 3001` 加 API 服务做 HTTP 冒烟，6/6 通过（第一次跑时 AC-14 失败，暴露了会话 token 泄露问题，修复后重跑通过）。测试账号已删除
+
+### AC 对账
+
+| AC | 结果 | 依据 |
+|----|------|------|
+| AC-10 未登录打开 `/dashboard` → `/login?redirect=%2Fdashboard`，登录后回到 `/dashboard` | ✅ | 未登录访问返回 307，跳到 `/login?redirect=%2Fdashboard`；登录后访问同一个地址返回 307，跳到 `/dashboard`（T-03 的回跳逻辑） |
+| AC-13 用户菜单显示用户名 | 🟡 服务端 ✅ / 菜单待 E2E | `/dashboard` 用 `getDisplayName` 渲染出 `Web_xxx`（保留注册时的大小写）；用户菜单用同一个函数，但菜单在客户端渲染，要等 T-05 用浏览器验证 |
+| AC-14 不显示 `@users.local` | ✅ | 已登录访问 `/dashboard`，HTML 里找不到 `users.local`；用户菜单里原来显示 email 的那一项已经删掉 |
+| AC-15 退出登录跳 `/login`，再访问 `/dashboard` 会被重定向 | 🟡 重定向 ✅ / 点击按钮待 E2E | 登出后带着旧 cookie 访问 `/dashboard`，返回 307，跳到 `/login?redirect=%2Fdashboard`；点击菜单「退出登录」后跳转，要等 T-05 验证 |
+
+附加验证：已登录访问 `/dashboard`，HTML 里没有会话 token（token 长度 32，没有在页面里找到）。
+
+### 结论
+
+通过（冒烟 6/6；AC-10/14 ✅，AC-13/15 的浏览器部分由 T-05 E2E 验收）

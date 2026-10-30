@@ -431,3 +431,14 @@ Biome 会自动捕获大多数机械问题。将注意力集中在：
 
 **流程**
 - 送审前代码就已经被提交（例如手动 `update` 提交）时，不改写历史，用 `codex-companion.mjs review --base <批次开始前的提交> --scope branch` 审查这一段提交
+
+### 02-web-username-auth（批次 T-04）— 2026-10-31
+
+**踩坑**
+- **不要把整个 session 对象作为 prop 从 Server Component 传给客户端组件**：props 会被序列化进 HTML 的 RSC payload，session 里有 httpOnly 的会话 token，这样一来 httpOnly 就白设了。脚手架的 `dashboard` 原来就是这么写的 → 已改掉。客户端组件需要用户信息时，只传需要的字段（如显示名），或者在客户端调用 `authClient.useSession()`
+- 检查页面有没有泄露数据，只看渲染出来的文字不够：要在 HTML 全文（包括 RSC payload）里搜敏感值
+
+**约定**
+- 显示用户名统一用 `lib/display-name.ts` 的 `getDisplayName(user)`（优先级 `displayUsername` → `username` → `name`），不要显示 `user.email`，它可能是占位邮箱
+- 需要登录的页面在 Server Component 里调用 `getServerSession()`，拿不到会话就 `redirect("/login?redirect=<当前路径编码>")`
+- 登出统一走：`authClient.signOut()`，检查 `error` → `queryClient.clear()` → `router.push("/login")`
