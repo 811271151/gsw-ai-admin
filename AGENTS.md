@@ -490,3 +490,10 @@ Biome 会自动捕获大多数机械问题。将注意力集中在：
 - 移动端表单只用 `validators: { onSubmit: schema }`，每个字段的错误显示在该字段下方（`TextField isInvalid` + `FieldError`），不加 `onBlur` 校验器（原因见 02 T-05 的踩坑）
 - 注册屏幕外层用 `Container isScrollable={false}` 包一个 `react-native-keyboard-controller` 的 `KeyboardAwareScrollView`（`bottomOffset={96}`），保证键盘弹出时不挡住提交按钮
 - **W4b 并行**：只有两个任务改的文件完全不重叠，才派两个 Worker subagent 并行开发，并在 prompt 里写明「允许改动的文件」；Worker 都返回后，再派一个独立的 Checker subagent 交叉校验 diff；Queen 合并后统一跑 biome、tsc 和打包
+
+### 03-native-username-auth（批次 T-04）— 2026-10-31
+
+**约定**
+- 移动端的登录守卫写在页面里：`useSession()` 加载时显示 Spinner，没有 `session.user` 时返回 `<Redirect href="/login" />`。登出后不用手动跳转，会话变为 null 后页面重新渲染，`<Redirect>` 会自动跳走
+- 需要登录的 tRPC 查询加 `enabled: Boolean(session?.user)`，未登录时不发请求，避免必然的 401
+- 移动端显示用户名用 `lib/display-name.ts` 的 `getDisplayName`（规则和 Web 一致），不显示 email

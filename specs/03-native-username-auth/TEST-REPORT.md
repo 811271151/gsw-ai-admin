@@ -46,3 +46,27 @@ T-01 是基础任务，包括：auth-client 接入 `usernameClient`，根 Stack 
 ### 结论
 
 通过（静态检查 + 打包；AC-01~06 的逻辑层和接口层已验证，设备 UI 由 T-05 验收）
+
+---
+
+## 批次 3：T-04（2026-10-31）
+
+### 套件结果
+
+- `apps/native` `tsc --noEmit`：✅
+- `biome check`（`app/(drawer)/index.tsx`、`lib/display-name.ts`）：✅ 0 错误
+- 打包：✅ `expo export --platform android` 成功（7.7MB）
+- 代码检索：`app/`、`components/` 里只有 `login.tsx` / `register.tsx` 引用登录、注册表单；没有 `session.user.email` 和 `users.local`
+- 设备或模拟器 UI 测试：**未执行**（没有 AVD 或设备）
+
+### AC 对账
+
+| AC | 结果 | 依据 |
+|----|------|------|
+| AC-08 未登录启动 App → 登录屏幕 | 🟡 代码 ✅ / 设备未执行 | `useSession()` 加载时显示 Spinner，没有 `session.user` 时 `<Redirect href="/login" />` |
+| AC-09 首页不出现 `@users.local` | ✅ | 首页用 `getDisplayName(session.user)` 显示用户名，代码里不再引用 `email`（已检索确认） |
+| AC-10 退出登录 → 登录屏幕，重启后仍未登录 | 🟡 代码 ✅ / 设备未执行 | `signOut()` 先清空 SecureStore 里的 cookie 和会话缓存（`@better-auth/expo` 源码已确认），然后 `queryClient.clear()`，会话变为 null 后 `<Redirect>` 跳到 `/login`；「重启后仍未登录」需要设备验证 |
+
+### 结论
+
+通过（静态检查 + 打包 + 代码检索；AC-09 ✅，AC-08/10 的设备部分由 T-05 验收）
