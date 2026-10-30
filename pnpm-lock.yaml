@@ -351,6 +351,9 @@ importers:
       '@gsw-ai-admin/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@gsw-ai-admin/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@gsw-ai-admin/ui':
         specifier: workspace:*
         version: link:../../packages/ui

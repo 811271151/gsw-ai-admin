@@ -390,3 +390,18 @@ Biome 会自动捕获大多数机械问题。将注意力集中在：
 - 请求要带 `origin: ENV.CORS_ORIGIN` 请求头，否则会被 Better Auth 的来源校验拦下
 - 测试账号的用户名统一加随机后缀，在 `afterAll` 里按用户名删除，再调用 `db.$disconnect()`
 - 集成测试需要本地 PostgreSQL，连接配置在 `apps/server/.env` 的 `DATABASE_URL`；缺这个变量时 varlock 直接报错，测试会失败而不是跳过
+
+### 02-web-username-auth（批次 T-01）— 2026-10-30
+
+**踩坑**
+- 防开放重定向不能只比字符串前缀：浏览器解析 URL 时会去掉换行和 Tab，还会把 `\` 当成 `/`，所以 `/\n/evil.com`、`/\evil.com` 最后都会跳到外站 → `getSafeRedirect` 改为用 `new URL(value, 哨兵 origin)` 解析，再比较 origin
+- Biome 的 `lint/performance/noJsxPropsBind` 不允许在 JSX 属性里直接写箭头函数，项目开了 React Compiler 也一样 → 用 `useCallback` 包一层再传进去
+
+**约定**
+- Web 客户端代码只能从 `@gsw-ai-admin/auth/schemas` 导入校验规则；不要导入包根 `@gsw-ai-admin/auth`，它会把 better-auth 服务端代码和 Prisma 一起打进浏览器包
+- Web 读环境变量用 `import { ENV } from "@/env"`（varlock 生成），不要写 `process.env.X!`
+- 登录后的 redirect 参数一律先经过 `getSafeRedirect()`（`apps/web/src/lib/safe-redirect.ts`）
+- 密码输入框用 `components/password-input.tsx`（基于 `@gsw-ai-admin/ui` 的 InputGroup，带显示/隐藏按钮）
+
+**新依赖**
+- `@gsw-ai-admin/auth`（workspace）加入 `apps/web` 的依赖 — 用于共享 `signUpSchema`、`signInSchema` 和错误码文案
