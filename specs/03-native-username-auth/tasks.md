@@ -13,7 +13,7 @@
 
 ## 任务
 
-- [ ] T-01: [前端] `auth-client` 加 `usernameClient()`；根 Stack 注册 `login`、`register` 屏幕并新增两个路由文件（~1h）
+- [x] T-01: [前端] `auth-client` 加 `usernameClient()`；根 Stack 注册 `login`、`register` 屏幕并新增两个路由文件（~1h）
 - [ ] T-02: [前端] 重写 `sign-up.tsx`（用户名/密码/确认密码/选填邮箱、字段跳转、错误码映射、成功进登录屏），覆盖 AC-01~AC-04（~2h）
 - [ ] T-03: [前端] 重写 `sign-in.tsx`（用户名/密码、Spinner、错误码映射、成功 `router.replace("/")`），覆盖 AC-05~AC-07（~1.5h）
 - [ ] T-04: [前端] 首页加未登录重定向，去掉内嵌表单，显示用户名与退出登录，覆盖 AC-08~AC-10（~1h）

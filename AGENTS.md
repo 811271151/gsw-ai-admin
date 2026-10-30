@@ -463,3 +463,16 @@ Biome 会自动捕获大多数机械问题。将注意力集中在：
 **新依赖**
 - `@playwright/test` ^1.64.1（`apps/web` 开发依赖）— Web 端 E2E
 - `vitest`（catalog）加入 `apps/web` 开发依赖 — `getSafeRedirect` 单元测试
+
+### 03-native-username-auth（批次 T-01）— 2026-10-31
+
+**约定**
+- 移动端的 `expoClient` 存储只传 `expo-secure-store` 的 `getItem` / `getItemAsync` / `setItem` / `setItemAsync`，这是 `ExpoClientStorage` 要求的四个方法，用具名导入组成 `secureStorage`。不要写 `import * as SecureStore`，Biome 的 `noNamespaceImport` 会报错
+- 移动端能直接导入 workspace 包 `@gsw-ai-admin/auth/schemas`（Expo 58 的 Metro 默认支持 monorepo 和 package exports）。检查方法：`cd apps/native && CI=1 pnpm exec expo export --platform android --output-dir <临时目录>`，不需要设备
+- 登录、注册屏幕放在根 Stack（`app/login.tsx`、`app/register.tsx`），不放在 drawer 里，这样未登录时看不到抽屉菜单
+
+**踩坑**
+- 本机 Android SDK 没有 system image / AVD，也没有连接设备，所以跑不了模拟器验收。需要设备的 AC 要先和用户确认验证方式
+
+**新依赖**
+- `@gsw-ai-admin/auth`（workspace）加入 `apps/native` 的依赖 — 共享校验规则与错误文案
