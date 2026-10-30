@@ -66,3 +66,17 @@ Codex 在只读沙箱里运行测试命令时遇到 EPERM 失败。Claude 在本
 ## 结论（批次 T-04）
 
 P0/P1 已全部修复（本批次无 P0/P1）
+
+---
+
+## 批次 T-05 · Codex 意见（2026-10-30）
+
+范围：working tree（新增 `packages/auth/src/schemas.test.ts`、`apps/server/src/auth.integration.test.ts`）
+
+P0 x0 / P1 x0 / P2 x0。Codex 结论：新增的认证集成测试和 schema 单元测试未发现缺陷。
+
+Codex 在沙箱里运行测试时被依赖访问限制挡住。Claude 在本机执行 `pnpm test`，28/28 全部通过。
+
+## 结论（批次 T-05）
+
+P0/P1 已全部修复（本批次无 P0/P1）

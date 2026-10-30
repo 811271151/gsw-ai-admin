@@ -382,3 +382,11 @@ Biome 会自动捕获大多数机械问题。将注意力集中在：
 
 **新依赖**
 - `vitest` ^5.0.5（pnpm catalog）— 单元测试和服务端集成测试，目前用在 `packages/auth`、`apps/server`
+
+### 01-username-auth-core（批次 T-05）— 2026-10-30 · feature 完成
+
+**约定**
+- 服务端认证集成测试直接调用 `auth.handler(new Request(...))`（见 `apps/server/src/auth.integration.test.ts`），不用起 HTTP 服务，和线上用的是同一份 Better Auth 配置
+- 请求要带 `origin: ENV.CORS_ORIGIN` 请求头，否则会被 Better Auth 的来源校验拦下
+- 测试账号的用户名统一加随机后缀，在 `afterAll` 里按用户名删除，再调用 `db.$disconnect()`
+- 集成测试需要本地 PostgreSQL，连接配置在 `apps/server/.env` 的 `DATABASE_URL`；缺这个变量时 varlock 直接报错，测试会失败而不是跳过
