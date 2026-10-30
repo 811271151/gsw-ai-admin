@@ -121,6 +121,7 @@ gsw-ai-admin/
 
 ### 开发体验
 - **Vitest 5.0.5** - 单元测试与服务端集成测试（pnpm catalog）
+- **Playwright 1.64.1** - Web 端 E2E（`apps/web/e2e/`）
 - **Biome 2.5.15** - 快速的代码检查和格式化（通过 Ultracite）
 - **Ultracite 8.0.0** - 零配置代码质量预设
 - **Varlock 1.23.0** - 类型安全的环境变量与代码生成
@@ -200,7 +201,8 @@ pnpm run db:studio        # 打开 Prisma Studio
 pnpm run check            # 运行 Biome 检查
 pnpm run fix              # 自动修复问题
 pnpm run check-types      # TypeScript 类型检查
-pnpm test                 # 运行全部测试（Vitest，经 turbo）
+pnpm test                 # 运行全部单元/集成测试（Vitest，经 turbo）
+pnpm test:e2e             # 运行 Web E2E（Playwright，需本地 PostgreSQL，自动启动 3000/3001）
 ```
 
 ### Auth Schema 同步
@@ -442,3 +444,22 @@ Biome 会自动捕获大多数机械问题。将注意力集中在：
 - 显示用户名统一用 `lib/display-name.ts` 的 `getDisplayName(user)`（优先级 `displayUsername` → `username` → `name`），不要显示 `user.email`，它可能是占位邮箱
 - 需要登录的页面在 Server Component 里调用 `getServerSession()`，拿不到会话就 `redirect("/login?redirect=<当前路径编码>")`
 - 登出统一走：`authClient.signOut()`，检查 `error` → `queryClient.clear()` → `router.push("/login")`
+
+### 02-web-username-auth（批次 T-05）— 2026-10-31 · feature 完成
+
+**踩坑**
+- TanStack Form 的 `onBlur` 校验器把错误存在单独的 `errorMap.onBlur` 里，这份错误只在失焦时才刷新。用户输入改正后它仍然显示；点提交按钮时输入框先失焦，错误消失，按钮上移，第一次点击就落空了 → 校验只放在 `onChange` 一个地方，再用表单级 `listeners.onBlur: ({ fieldApi }) => fieldApi.validate("change")` 让失焦也刷新（包括没输入过的空字段），只在 `isBlurred || submissionAttempts > 0` 时显示错误。见 `components/sign-up-form.tsx`
+- 发现这个问题时，Playwright 的提示是「元素没找到」（toast 没出现），看起来像测试写错了 → 遇到这种情况，先在页面上记录请求、`submit` 事件和字段错误，确认是产品问题还是测试问题，再决定改哪边
+- Windows 上 `pnpm install` 偶尔报 `EPERM: rename ... node_modules\.pnpm\next@...`，会留下缺 `next` 包的半成品安装 → 确认没有 dev 服务在跑之后重试一次就好；重试前先 `ls` 看一下包目录还在不在
+- 本机已缓存的 Chromium 版本要和 `@playwright/test` 的版本对应，升级 Playwright 后要重新装浏览器（`test:e2e` 脚本会自动装）
+
+**约定**
+- E2E：`pnpm test:e2e`（turbo → `apps/web`）。Playwright 自动启动 API（`tsx src/index.ts`，3000 端口）和 Web（`next build && next start -p 3001`），需要本地 PostgreSQL。用例文件放在 `apps/web/e2e/*.e2e.ts`，这个后缀不会被 Vitest 识别成测试
+- E2E 的测试账号统一加 `process.env.E2E_RUN_PREFIX` 前缀（`e2e_` + 6 位 hex），用户名加起来不能超过 20 位。`globalTeardown` 调用 `apps/server/scripts/delete-test-users.ts` 按前缀删除，这个脚本只接受 `e2e_` 开头的前缀
+- E2E 页面打开后要等 `networkidle`（水合完成）再输入，否则受控输入框可能被重置
+- 页面上有同名按钮时（比如页头的「登录」和表单里的「登录」），用 `page.locator("form").getByRole(...)` 限定范围
+- 单元测试 `pnpm test` 不依赖浏览器，CI 可以只跑这一个；E2E 需要数据库，单独跑
+
+**新依赖**
+- `@playwright/test` ^1.64.1（`apps/web` 开发依赖）— Web 端 E2E
+- `vitest`（catalog）加入 `apps/web` 开发依赖 — `getSafeRedirect` 单元测试

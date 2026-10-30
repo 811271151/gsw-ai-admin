@@ -79,3 +79,28 @@ P0 x0 / P1 x0 / P2 x0。Codex 结论：未发现可修复的回归问题。
 ## 结论（批次 T-04）
 
 P0/P1 已全部修复（本批次 Codex 无 P0/P1；另修复 1 个会话 token 泄露问题）
+
+---
+
+## 批次 T-05 · Codex 意见（2026-10-31）
+
+范围：working tree，包括 Vitest 和 Playwright 依赖、`playwright.config.ts`、`e2e/`、`safe-redirect.test.ts`、`apps/server/scripts/delete-test-users.ts`，以及 `sign-up-form.tsx` 的校验时机修复。送审耗时超过 10 分钟，转到后台完成。
+
+E2E 在送审前发现并修复了一个产品 bug（W4a 自查，不是 Codex 提的）：注册页填完确认密码后，第一次点「注册」没有反应。原因是 `onBlur` 校验留下的过期错误。点击按钮时输入框先失焦，过期错误消失，按钮往上移，鼠标松开时已经不在按钮上，这次点击就落空了。修复方式是改用 `onChange` 校验，并且只在字段失焦或提交过之后才显示错误。
+
+P0 x0 / P1 x0 / P2 x2
+
+- [P2] 去掉 `onBlur` 校验后，没输入过的空字段失焦不会提示 — `components/sign-up-form.tsx:65-66`
+  - 问题：TanStack Form 的 `blur` 事件只会执行 `onBlur` 校验器。用户在空字段里点一下再离开，没有任何错误提示，不符合 R-01「失焦即校验」
+  - 分类：**可修复**
+  - 修复：**没有**照 Codex 的建议把 `onBlur: signUpSchema` 加回来。加回来后，错误会存进单独的 `errorMap.onBlur`，而这份错误只在失焦时才刷新，用户输入改正后它仍然留着，前面那个点击落空的 bug 又会出现。改为使用表单级 `listeners.onBlur`，在失焦时执行 `fieldApi.validate("change")`。这样错误始终只在 `onChange` 这一处，失焦时也会刷新
+  - 新增 E2E「R-01 没输入过的空字段失焦也提示」覆盖这个场景
+- [P2] 干净环境下 `pnpm test:e2e` 缺浏览器，测试直接失败 — `apps/web/package.json`
+  - 分类：**可修复**
+  - 修复：`test:e2e` 改为 `playwright install --only-shell chromium && playwright test`。已经装过浏览器时，这一步不下载、0.7 秒就结束
+
+Codex 在沙箱里跑测试时遇到 node_modules 的 EPERM，没跑成。Claude 在本机执行：单元测试 51/51，E2E 15/15，连续两轮。
+
+## 结论（批次 T-05）
+
+P0/P1 已全部修复（本批次无 P0/P1；P2 x2 已修复；另修复点击落空 bug x1）

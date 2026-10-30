@@ -7,7 +7,9 @@
     "build": "next build",
     "check-types": "tsc --noEmit",
     "start": "next start",
-    "env:generate": "varlock codegen"
+    "env:generate": "varlock codegen",
+    "test": "vitest run --passWithNoTests",
+    "test:e2e": "playwright install --only-shell chromium && playwright test"
   },
   "dependencies": {
     "@gsw-ai-admin/api": "workspace:*",
@@ -33,12 +35,14 @@
   },
   "devDependencies": {
     "@gsw-ai-admin/config": "workspace:*",
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "catalog:",
     "@tanstack/react-query-devtools": "^5.104.2",
     "@types/node": "catalog:",
     "@types/react": "^19.2.18",
     "@types/react-dom": "catalog:",
     "tailwindcss": "catalog:",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "catalog:"
   }
 }

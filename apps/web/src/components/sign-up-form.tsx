@@ -32,6 +32,14 @@ export default function SignUpForm() {
 			password: "",
 			username: "",
 		},
+		// 错误只放在 onChange 一个来源里：输入时校验，失焦时（包括没输入过的空字段）再跑一次同样的校验，
+		// 只在字段失焦或提交过之后显示。不用 onBlur 校验器：它的错误要等下次失焦才刷新，会过期，
+		// 点「注册」时输入框先失焦、过期错误消失、按钮上移，这次点击就落空了
+		listeners: {
+			onBlur: ({ fieldApi }) => {
+				fieldApi.validate("change");
+			},
+		},
 		onSubmit: async ({ value }) => {
 			try {
 				const { error } = await authClient.signUp.email({
@@ -60,7 +68,7 @@ export default function SignUpForm() {
 			}
 		},
 		validators: {
-			onBlur: signUpSchema,
+			onChange: signUpSchema,
 			onSubmit: signUpSchema,
 		},
 	});
@@ -88,7 +96,9 @@ export default function SignUpForm() {
 							name={field.name}
 							onBlur={field.handleBlur}
 							onChange={field.handleChange}
-							showErrors={field.state.meta.isTouched}
+							showErrors={
+								field.state.meta.isBlurred || form.state.submissionAttempts > 0
+							}
 							value={field.state.value}
 						/>
 					)}
@@ -103,7 +113,9 @@ export default function SignUpForm() {
 							name={field.name}
 							onBlur={field.handleBlur}
 							onChange={field.handleChange}
-							showErrors={field.state.meta.isTouched}
+							showErrors={
+								field.state.meta.isBlurred || form.state.submissionAttempts > 0
+							}
 							type="password"
 							value={field.state.value}
 						/>
@@ -119,7 +131,9 @@ export default function SignUpForm() {
 							name={field.name}
 							onBlur={field.handleBlur}
 							onChange={field.handleChange}
-							showErrors={field.state.meta.isTouched}
+							showErrors={
+								field.state.meta.isBlurred || form.state.submissionAttempts > 0
+							}
 							type="password"
 							value={field.state.value}
 						/>
@@ -135,7 +149,9 @@ export default function SignUpForm() {
 							name={field.name}
 							onBlur={field.handleBlur}
 							onChange={field.handleChange}
-							showErrors={field.state.meta.isTouched}
+							showErrors={
+								field.state.meta.isBlurred || form.state.submissionAttempts > 0
+							}
 							type="email"
 							value={field.state.value}
 						/>

@@ -103,3 +103,40 @@ AC-10（未登录访问 `/dashboard` 时带上 redirect）属于 T-04。
 ### 结论
 
 通过（冒烟 6/6；AC-10/14 ✅，AC-13/15 的浏览器部分由 T-05 E2E 验收）
+
+---
+
+## 批次 5：T-05（2026-10-31）· 正式自动化测试
+
+### 套件结果
+
+- 单元测试（`pnpm test`）：51/51 ✅。其中 web 23 条（`getSafeRedirect`：拦截 17 种输入、放行 6 种），auth 15 条，server 13 条
+- E2E（`pnpm test:e2e`，Playwright 1.64.1 + Chromium headless shell）：**15/15 ✅，连续两轮**，每轮约 30 秒。Playwright 的 `webServer` 自动启动 API（tsx）和 Web（`next build && next start -p 3001`）
+- 数据清理：账号统一加本轮随机前缀 `e2e_xxxxxx_`，`globalTeardown` 每轮删 9 个。跑完后查库，残留 `e2e_` 账号为 0
+- 构建与静态检查：`tsc`、`biome` 通过（`next build` 是 E2E 启动步骤的一部分）
+
+调试过程：第一次跑 E2E，12/14 通过，AC-03 和 AC-04 失败。逐步排查后确认是产品 bug（点击落空，明细见 CR-REPORT.md），不是测试写错了。修复后全部通过。同一条测试没有连续失败 3 次。
+
+### AC 对账（E2E，取代批次 2~4 中的 🟡 项）
+
+| AC | 结果 | E2E 用例 |
+|----|------|----------|
+| AC-01 | ✅ | 「AC-01 用户名少于 3 位，失焦后提示」；另有「R-01 没输入过的空字段失焦也提示」 |
+| AC-02 | ✅ | 「AC-02 两次密码不一致，提示且不发注册请求」（统计 sign-up 请求数 = 0） |
+| AC-03 | ✅ | 「AC-03 不填邮箱注册成功，提示后跳 /login」 |
+| AC-04 | ✅ | 「AC-04 用户名已存在，提示并停留在注册页」 |
+| AC-05 | ✅ | 「AC-05 点击显示按钮，密码框在 password / text 间切换」 |
+| AC-06 | ✅ | 「AC-06 / AC-13 / AC-14」：登录后进入 `/dashboard` |
+| AC-07 | ✅ | 「AC-07 错误密码与不存在的用户名提示相同」 |
+| AC-08 | ✅ | 「AC-08 网络不可达时提示稍后重试」（`page.route` 中断请求） |
+| AC-09 | ✅ | 「AC-09 登录页与注册页互相跳转」 |
+| AC-10 | ✅ | 「AC-10 未登录访问 /dashboard 带 redirect 跳登录，登录后回到 /dashboard」 |
+| AC-11 | ✅ | 「AC-11 redirect 指向外站」+「AC-11 回归：点段归一化的 redirect」 |
+| AC-12 | ✅ | 「AC-12 已登录访问 /login 直接跳 /dashboard」 |
+| AC-13 | ✅ | 「AC-06 / AC-13 / AC-14」：用户菜单按钮显示用户名（保留大小写） |
+| AC-14 | ✅ | 同上：页面上没有 `users.local` 文字 |
+| AC-15 | ✅ | 「AC-15 退出登录跳 /login，再访问 /dashboard 被拦截」 |
+
+### 结论
+
+通过（单元 51/51，E2E 15/15 × 2 轮，AC 15/15 全部通过）
