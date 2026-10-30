@@ -52,7 +52,8 @@ gsw-ai-admin/
 │   │
 │   ├── auth/          # Better Auth 配置包
 │   │   └── src/
-│   │       └── index.ts      # Auth 导出
+│   │       ├── index.ts      # createAuth()（含 username 插件）
+│   │       └── schemas.ts    # 用户名/密码规则常量，服务端与客户端共用
 │   │
 │   ├── db/            # Prisma 数据库包
 │   │   ├── prisma/
@@ -335,3 +336,26 @@ Biome 会自动捕获大多数机械问题。将注意力集中在：
 ---
 
 大多数格式化和常见问题都由 Biome 自动修复。在提交前运行 `pnpm exec ultracite fix` 以确保合规。
+
+---
+
+## 开发经验记录（自动生成）
+
+### 01-username-auth-core（批次 T-01、T-02）— 2026-10-30
+
+**踩坑**
+- 启用 Better Auth `username` 插件后，User 表没有 `username` / `displayUsername` 列，注册和登录都会失败 → 插件不会改数据库 → 加插件后必须执行 `pnpm run auth:generate`，然后在 `packages/db` 下执行 `prisma db push`（或 `db:migrate`）和 `prisma generate`
+- username 插件默认的 validator 允许点号 `.` → 用 `usernameValidator: isValidUsername` 收紧为只允许字母、数字、下划线
+- `rememberMe: false` 只把 session cookie 改成会话 cookie（不带 Max-Age），服务端会话有效期仍是全局的 `session.expiresIn`，Better Auth 不支持按「记住我」设置两档有效期
+- 新 clone 的仓库没有 `packages/db/prisma/generated` → 所有依赖 `@gsw-ai-admin/db` 的包 `tsc` 都会报找不到模块 → 先执行 `pnpm run db:generate`
+- `biome.json` 里的 `nursery.useTailwindSortedClasses` 在 Biome 2.5.15 中已改名为 `useSortedClasses`；`apps/fumadocs/biome.json` 需要加 `"root": false` → 两处不修，`ultracite check/fix` 和 `.claude/settings.json` 里写文件后执行的 hook 都会因配置错误直接退出
+- Codex 评审跑在只读沙箱里，执行 `tsc` 时缺依赖访问权限 → 类型检查以本机执行 `tsc --noEmit` 的结果为准
+
+**约定**
+- 用户名、密码的长度和 `USERNAME_PATTERN` 只在 `packages/auth/src/schemas.ts` 定义一次，服务端插件配置和客户端表单校验都从这里导入
+- 用户名注册走 `POST /api/auth/sign-up/email`（带 `username` 字段，email 必填，用户不填时由客户端生成占位邮箱）；用户名登录走 `POST /api/auth/sign-in/username`
+- 会话有效期 30 天（`session.expiresIn`）
+- Codex 代码评审：`/codex:review`（codex 插件 1.0.6），等价于执行 `node ~/.claude/plugins/cache/openai-codex/codex/1.0.6/scripts/codex-companion.mjs review --wait --scope working-tree`
+
+**新依赖**
+- 无（`better-auth/plugins` 随 better-auth 安装）
