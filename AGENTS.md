@@ -405,3 +405,15 @@ Biome 会自动捕获大多数机械问题。将注意力集中在：
 
 **新依赖**
 - `@gsw-ai-admin/auth`（workspace）加入 `apps/web` 的依赖 — 用于共享 `signUpSchema`、`signInSchema` 和错误码文案
+
+### 02-web-username-auth（批次 T-02）— 2026-10-30
+
+**踩坑**
+- Better Auth 的 `/sign-up/email` 默认在注册成功后直接登录。如果在服务端设置 `emailAndPassword.autoSignIn: false`，1.7.12 遇到重复邮箱会返回伪造的成功响应（防枚举）：用户看到注册成功，实际上没有建账户 → 不要改这个配置，在客户端注册成功后调用 `signOut()`
+- Better Auth 客户端的 `signUp`、`signIn`、`signOut` 失败时返回 `{ error }`，不会抛异常；只有网络层失败才会抛 → 每次调用都要检查 `error`，外面再包一层 `try/catch` 处理网络异常
+- 每改一批表单就要把整条流程走一遍：只改注册页时，注册成功后跳到的还是旧的邮箱登录页，新用户根本登不进去（Codex P1）
+
+**约定**
+- 表单字段统一用 `components/form-field.tsx` 的 `FormField`：直接把 TanStack Form 的 `field.handleChange` / `field.handleBlur` 传进去，这样 JSX 里不用写内联箭头函数，也就满足 Biome 的 `noJsxPropsBind`。只有 `isTouched` 的字段才显示错误
+- Server Component 读取会话用 `lib/server-session.ts` 的 `getServerSession()`：认证服务连不上时返回 `null`，不会抛异常，登录页和注册页照常渲染。需要强制登录的页面再自己 `redirect`
+- `form.Subscribe` 的 `selector` 写成模块级函数（如 `selectIsSubmitting`），不要写成内联箭头函数

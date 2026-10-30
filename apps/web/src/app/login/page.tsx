@@ -1,16 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback } from "react";
 
 import SignInForm from "@/components/sign-in-form";
-import SignUpForm from "@/components/sign-up-form";
 
+// 注册已拆到 /register；本页的完整改造（用户名登录、记住我、redirect）在 T-03
 export default function LoginPage() {
-  const [showSignIn, setShowSignIn] = useState(false);
+	const router = useRouter();
+	const goToRegister = useCallback(() => router.push("/register"), [router]);
 
-  return showSignIn ? (
-    <SignInForm onSwitchToSignUp={() => setShowSignIn(false)} />
-  ) : (
-    <SignUpForm onSwitchToSignIn={() => setShowSignIn(true)} />
-  );
+	return <SignInForm onSwitchToSignUp={goToRegister} />;
 }

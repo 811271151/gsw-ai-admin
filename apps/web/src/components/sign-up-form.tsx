@@ -1,156 +1,169 @@
+"use client";
+
+import {
+	getAuthErrorMessage,
+	signUpSchema,
+	toPlaceholderEmail,
+} from "@gsw-ai-admin/auth/schemas";
 import { Button } from "@gsw-ai-admin/ui/components/button";
-import { Input } from "@gsw-ai-admin/ui/components/input";
-import { Label } from "@gsw-ai-admin/ui/components/label";
 import { useForm } from "@tanstack/react-form";
+import { Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useCallback } from "react";
 import { toast } from "sonner";
-import z from "zod";
 
 import { authClient } from "@/lib/auth-client";
 
-import Loader from "./loader";
+import FormField from "./form-field";
 
-export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
-  const router = useRouter();
-  const { isPending } = authClient.useSession();
+const SIGN_UP_FAILED = "注册失败，请稍后重试";
 
-  const form = useForm({
-    defaultValues: {
-      email: "",
-      password: "",
-      name: "",
-    },
-    onSubmit: async ({ value }) => {
-      await authClient.signUp.email(
-        {
-          email: value.email,
-          password: value.password,
-          name: value.name,
-        },
-        {
-          onSuccess: () => {
-            router.push("/dashboard");
-            toast.success("Sign up successful");
-          },
-          onError: (error) => {
-            toast.error(error.error.message || error.error.statusText);
-          },
-        },
-      );
-    },
-    validators: {
-      onSubmit: z.object({
-        name: z.string().min(2, "Name must be at least 2 characters"),
-        email: z.email("Invalid email address"),
-        password: z.string().min(8, "Password must be at least 8 characters"),
-      }),
-    },
-  });
+const selectIsSubmitting = (state: { isSubmitting: boolean }) =>
+	state.isSubmitting;
 
-  if (isPending) {
-    return <Loader />;
-  }
+export default function SignUpForm() {
+	const router = useRouter();
 
-  return (
-    <div className="mx-auto w-full mt-10 max-w-md p-6">
-      <h1 className="mb-6 text-center text-3xl font-bold">Create Account</h1>
+	const form = useForm({
+		defaultValues: {
+			confirmPassword: "",
+			email: "",
+			password: "",
+			username: "",
+		},
+		onSubmit: async ({ value }) => {
+			try {
+				const { error } = await authClient.signUp.email({
+					displayUsername: value.username,
+					email: value.email.trim() || toPlaceholderEmail(value.username),
+					name: value.username,
+					password: value.password,
+					username: value.username,
+				});
+				if (error) {
+					toast.error(getAuthErrorMessage(error.code, SIGN_UP_FAILED));
+					return;
+				}
+				// 注册接口默认顺带登录，而需求是注册后回登录页手动登录，所以先登出
+				const { error: signOutError } = await authClient.signOut();
+				if (signOutError) {
+					// 账户已建好但会话没清掉，按已登录处理，避免提示「请登录」却仍在登录态
+					toast.success("注册成功");
+					router.push("/dashboard");
+					return;
+				}
+				toast.success("注册成功，请登录");
+				router.push("/login");
+			} catch {
+				toast.error(SIGN_UP_FAILED);
+			}
+		},
+		validators: {
+			onBlur: signUpSchema,
+			onSubmit: signUpSchema,
+		},
+	});
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          form.handleSubmit();
-        }}
-        className="space-y-4"
-      >
-        <div>
-          <form.Field name="name">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Name</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
-            )}
-          </form.Field>
-        </div>
+	const handleSubmit = useCallback(
+		(event: React.FormEvent<HTMLFormElement>) => {
+			event.preventDefault();
+			event.stopPropagation();
+			form.handleSubmit();
+		},
+		[form]
+	);
 
-        <div>
-          <form.Field name="email">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Email</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="email"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
-            )}
-          </form.Field>
-        </div>
+	return (
+		<div className="mx-auto mt-10 w-full max-w-md p-6">
+			<h1 className="mb-6 text-center font-bold text-3xl">注册账户</h1>
 
-        <div>
-          <form.Field name="password">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Password</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="password"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
-            )}
-          </form.Field>
-        </div>
+			<form className="space-y-4" noValidate onSubmit={handleSubmit}>
+				<form.Field name="username">
+					{(field) => (
+						<FormField
+							autoComplete="username"
+							errors={field.state.meta.errors}
+							label="用户名"
+							name={field.name}
+							onBlur={field.handleBlur}
+							onChange={field.handleChange}
+							showErrors={field.state.meta.isTouched}
+							value={field.state.value}
+						/>
+					)}
+				</form.Field>
 
-        <form.Subscribe
-          selector={(state) => ({ canSubmit: state.canSubmit, isSubmitting: state.isSubmitting })}
-        >
-          {({ canSubmit, isSubmitting }) => (
-            <Button type="submit" className="w-full" disabled={!canSubmit || isSubmitting}>
-              {isSubmitting ? "Submitting..." : "Sign Up"}
-            </Button>
-          )}
-        </form.Subscribe>
-      </form>
+				<form.Field name="password">
+					{(field) => (
+						<FormField
+							autoComplete="new-password"
+							errors={field.state.meta.errors}
+							label="密码"
+							name={field.name}
+							onBlur={field.handleBlur}
+							onChange={field.handleChange}
+							showErrors={field.state.meta.isTouched}
+							type="password"
+							value={field.state.value}
+						/>
+					)}
+				</form.Field>
 
-      <div className="mt-4 text-center">
-        <Button
-          variant="link"
-          onClick={onSwitchToSignIn}
-          className="text-indigo-600 hover:text-indigo-800"
-        >
-          Already have an account? Sign In
-        </Button>
-      </div>
-    </div>
-  );
+				<form.Field name="confirmPassword">
+					{(field) => (
+						<FormField
+							autoComplete="new-password"
+							errors={field.state.meta.errors}
+							label="确认密码"
+							name={field.name}
+							onBlur={field.handleBlur}
+							onChange={field.handleChange}
+							showErrors={field.state.meta.isTouched}
+							type="password"
+							value={field.state.value}
+						/>
+					)}
+				</form.Field>
+
+				<form.Field name="email">
+					{(field) => (
+						<FormField
+							autoComplete="email"
+							errors={field.state.meta.errors}
+							label="邮箱（选填）"
+							name={field.name}
+							onBlur={field.handleBlur}
+							onChange={field.handleChange}
+							showErrors={field.state.meta.isTouched}
+							type="email"
+							value={field.state.value}
+						/>
+					)}
+				</form.Field>
+
+				<form.Subscribe selector={selectIsSubmitting}>
+					{(isSubmitting) => (
+						<Button className="w-full" disabled={isSubmitting} type="submit">
+							{isSubmitting ? (
+								<>
+									<Loader2 className="animate-spin" />
+									注册中...
+								</>
+							) : (
+								"注册"
+							)}
+						</Button>
+					)}
+				</form.Subscribe>
+			</form>
+
+			<p className="mt-4 text-center text-sm">
+				已有账户？
+				<Link className="underline underline-offset-4" href="/login">
+					登录
+				</Link>
+			</p>
+		</div>
+	);
 }
