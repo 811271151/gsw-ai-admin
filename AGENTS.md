@@ -476,3 +476,17 @@ Biome 会自动捕获大多数机械问题。将注意力集中在：
 
 **新依赖**
 - `@gsw-ai-admin/auth`（workspace）加入 `apps/native` 的依赖 — 共享校验规则与错误文案
+
+### 03-native-username-auth（批次 T-02 + T-03，W4b 并行）— 2026-10-31
+
+**踩坑**
+- 原生端 `expoClient` 在发出 `/sign-out` 请求**之前**就清空本地 cookie 和会话缓存（`clearSessionCache()`），所以请求失败时本机已经是未登录。不要把「登出失败」当成「仍是登录态」来处理（Codex P2）。和 Web 不同：Web 的 cookie 由服务端清除，登出失败时仍是登录态
+- 注册成功后要先登出，再回登录屏幕。登出必须单独放一个 `try`，否则它的网络异常会被注册的 `catch` 当成「注册失败」，用户重试只会得到「用户名已被使用」
+- expo-router 只用 `router.replace` 会在栈里留下旧屏幕（「首页→登录→注册→登录」后，按返回键能退回登录页）→ 改用 `router.dismissTo(href)`：栈里已有目标就退回到它，没有就替换当前屏幕（expo-router 58 的 `StackRouter` `POP_TO`）
+- 提交按钮在提交中会禁用，但键盘的「前往」键（`onSubmitEditing`）不会 → `handleSubmit` 先判断 `form.state.isSubmitting`
+- Biome 的 `noUnnecessaryConditions` 会把 `useRef<InputRef>(null)` 上的 `ref.current?.focus()` 误报成多余判断 → 声明成 `useRef<InputRef | null>(null)`
+
+**约定**
+- 移动端表单只用 `validators: { onSubmit: schema }`，每个字段的错误显示在该字段下方（`TextField isInvalid` + `FieldError`），不加 `onBlur` 校验器（原因见 02 T-05 的踩坑）
+- 注册屏幕外层用 `Container isScrollable={false}` 包一个 `react-native-keyboard-controller` 的 `KeyboardAwareScrollView`（`bottomOffset={96}`），保证键盘弹出时不挡住提交按钮
+- **W4b 并行**：只有两个任务改的文件完全不重叠，才派两个 Worker subagent 并行开发，并在 prompt 里写明「允许改动的文件」；Worker 都返回后，再派一个独立的 Checker subagent 交叉校验 diff；Queen 合并后统一跑 biome、tsc 和打包
