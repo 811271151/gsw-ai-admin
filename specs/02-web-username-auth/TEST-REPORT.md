@@ -52,3 +52,30 @@ T-01 是基础任务，只做三件事：auth-client 接入 `usernameClient`、�
 ### 结论
 
 通过（构建 + 运行冒烟 6/6；AC-01~05 的逻辑层和接口层已验证，UI 交互由 T-05 E2E 验收）
+
+---
+
+## 批次 3：T-03（2026-10-31）
+
+### 套件结果
+
+- 构建验证：✅ `next build`（`/login` 改为动态路由）、`tsc --noEmit`、`biome check` 通过
+- `getSafeRedirect` 自检：27/27（明细见 CR-REPORT.md）
+- 运行验证：`next start -p 3001` 加 API 服务，HTTP 冒烟 11/11 通过；修复 CR P1 后重新构建，又验证了 5 个场景，全部通过。测试账号已删除
+
+### AC 对账
+
+| AC | 结果 | 依据 |
+|----|------|------|
+| AC-06 登录成功跳 `/dashboard` 或 redirect 指定的站内路径 | 🟡 服务端 ✅ / 客户端跳转待 E2E | 已登录访问 `/login?redirect=%2Fdashboard%3Ftab%3D1` 返回 307，跳到 `/dashboard?tab=1`；表单拿到的是同一个 `redirectTo`，登录成功后执行 `router.push(redirectTo)` |
+| AC-07 错误密码和不存在的用户名提示相同 | ✅ | 接口两种情况都返回 `INVALID_USERNAME_OR_PASSWORD`（01 集成测试 + 本批次冒烟），`getAuthErrorMessage` 统一转成「用户名或密码不正确」 |
+| AC-08 网络不可达时提示「登录失败，请稍后重试」 | 🟡 待 E2E | `catch` 和没有错误码时都返回 `SIGN_IN_FAILED`；要看到 toast 需要浏览器 |
+| AC-09 登录页和注册页互相跳转 | ✅ | `/login` 页面里有 `href="/register"`（「立即注册」），`/register` 页面里有 `href="/login"`（T-02 已验证） |
+| AC-11 外站 redirect 不跳外站 | ✅ | `https://evil.com`、`//evil.com`、`/%5Cevil.com`、`/%0A/evil.com`、`/%09/evil.com`、`/a/..//evil.com`、`/a/%2e%2e//evil.com` 都返回 307，跳到 `/dashboard` |
+| AC-12 已登录访问 `/login` 跳 `/dashboard` | ✅ | 返回 307，跳到 `/dashboard` |
+
+AC-10（未登录访问 `/dashboard` 时带上 redirect）属于 T-04。
+
+### 结论
+
+通过（冒烟 16/16、helper 27/27；AC-07/09/11/12 ✅，AC-06/08 的浏览器部分由 T-05 E2E 验收）

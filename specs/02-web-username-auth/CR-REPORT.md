@@ -43,3 +43,23 @@ P0 x0 / P1 x1 / P2 x1
 ## 结论（批次 T-02）
 
 P0/P1 已全部修复（P1 x1、P2 x1 均已修复）
+
+---
+
+## 批次 T-03 · Codex 意见（2026-10-31）
+
+说明：W5 送审前，T-03 的 4 个代码文件已经被提交 `30c8067 update`（作者 阿耿，不是工作流生成的提交）带进了历史。工作区因此是干净的，没法按 working tree 送审，改用 `review --base ed483b5 --scope branch` 审查这一个提交的改动。范围与本批次完全一致，没有改写这个提交。
+
+范围：`app/login/page.tsx`、`components/sign-in-form.tsx`、`components/form-field.tsx`（新增 `CheckboxField`）、`lib/safe-redirect.ts`（返回类型改为 `Route`）
+
+P0 x0 / P1 x1 / P2 x0
+
+- [P1] 点段归一化后变成协议相对地址，造成开放重定向 — `app/login/page.tsx:13-15`
+  - 问题：`redirect=/a/..//evil.com` 解析后 origin 仍是哨兵域名，能通过检查，但 `pathname` 是 `//evil.com`。服务端 `redirect()` 和登录后的 `router.push` 都会把它当作外站地址
+  - 分类：**可修复**（真实的安全绕过，AC-11）
+  - 修复：`getSafeRedirect` 拼出最终的 `pathname + search + hash` 后，用同一个哨兵域名把它**再解析一次**，确认 origin 没变才返回。返回值会被浏览器或 Next 再解析一次，所以对返回值本身也要校验
+  - 自检：27 个输入全部符合预期。21 个恶意输入都被拦截，包括 `/a/..//evil.com`、`/a/%2e%2e//evil.com`、`/a/.%2E//evil.com`、`/a/..\\evil.com`、`/a/b/../..//evil.com`、`/..//evil.com`，以及 T-01 已经覆盖的控制字符和反斜杠；6 个站内路径原样保留（包括 `/a/../dashboard` → `/dashboard`）。构建后用真实 HTTP 请求测试，已登录用户访问 `/login?redirect=/a/..//evil.com` 返回 307，跳到 `/dashboard`
+
+## 结论（批次 T-03）
+
+P0/P1 已全部修复（P1 x1 已修复）

@@ -417,3 +417,17 @@ Biome 会自动捕获大多数机械问题。将注意力集中在：
 - 表单字段统一用 `components/form-field.tsx` 的 `FormField`：直接把 TanStack Form 的 `field.handleChange` / `field.handleBlur` 传进去，这样 JSX 里不用写内联箭头函数，也就满足 Biome 的 `noJsxPropsBind`。只有 `isTouched` 的字段才显示错误
 - Server Component 读取会话用 `lib/server-session.ts` 的 `getServerSession()`：认证服务连不上时返回 `null`，不会抛异常，登录页和注册页照常渲染。需要强制登录的页面再自己 `redirect`
 - `form.Subscribe` 的 `selector` 写成模块级函数（如 `selectIsSubmitting`），不要写成内联箭头函数
+
+### 02-web-username-auth（批次 T-03）— 2026-10-31
+
+**踩坑**
+- 防开放重定向，只校验「解析后的 origin」还不够：`/a/..//evil.com` 去掉点段后 pathname 变成 `//evil.com`，它被再解析一次就成了外站地址 → `getSafeRedirect` 对拼好的结果再解析一次、再比一次 origin（Codex P1）
+- `next.config` 开了 `typedRoutes`，`redirect()` 和 `router.push()` 不接受普通 `string` → 在校验函数里返回 `Route` 类型（`getSafeRedirect(): Route`），调用的地方就不用再做类型断言
+
+**约定**
+- 带 redirect 的页面在 Server Component 里读取 `searchParams.redirect`（Next 16 的 `searchParams` 是 Promise），交给 `getSafeRedirect` 处理后，作为 prop 传给客户端表单。客户端不要自己再读 URL 参数
+- 只有 Web 端需要的字段（如 `rememberMe`）用 `signInSchema.extend({...})` 在 Web 组件里扩展，不要加进共享 schema
+- 复选框用 `form-field.tsx` 的 `CheckboxField`，可以直接传 `field.handleChange`
+
+**流程**
+- 送审前代码就已经被提交（例如手动 `update` 提交）时，不改写历史，用 `codex-companion.mjs review --base <批次开始前的提交> --scope branch` 审查这一段提交

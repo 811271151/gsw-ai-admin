@@ -22,6 +22,13 @@ export const getSafeRedirect = (value: string | null | undefined): Route => {
 	if (url.origin !== SENTINEL_ORIGIN) {
 		return DEFAULT_REDIRECT;
 	}
+
+	const destination = `${url.pathname}${url.search}${url.hash}`;
+	// 去掉点段后结果可能变成协议相对地址："/a/..//evil.com" 的 pathname 是 "//evil.com"。
+	// 输出的字符串会被再次解析，所以对输出本身也要校验一次
+	if (new URL(destination, SENTINEL_ORIGIN).origin !== SENTINEL_ORIGIN) {
+		return DEFAULT_REDIRECT;
+	}
 	// 已确认是站内路径；typedRoutes 无法静态校验运行时路径，只能在这里收窄一次
-	return `${url.pathname}${url.search}${url.hash}` as Route;
+	return destination as Route;
 };
