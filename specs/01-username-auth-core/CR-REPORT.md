@@ -50,3 +50,19 @@ Codex 在沙箱里没能完成运行时验证和类型检查。Claude 在本机�
 ## 结论（批次 T-03）
 
 P0/P1 已全部修复（本批次无 P0/P1）
+
+---
+
+## 批次 T-04 · Codex 意见（2026-10-30）
+
+范围：working tree（`package.json`、`packages/auth/package.json`、`apps/server/package.json`、`pnpm-workspace.yaml`、`pnpm-lock.yaml`、`turbo.json`）
+
+P0 x0 / P1 x0 / P2 x0。Codex 结论：Vitest 依赖、锁文件、Turbo 测试任务三者配置一致，未发现缺陷。
+
+Codex 在只读沙箱里运行测试命令时遇到 EPERM 失败。Claude 在本机执行 `pnpm install --frozen-lockfile --offline` 和 `pnpm test`，两者都通过。
+
+说明：第一次送审在后台运行，会话中断时被终止，没有产出结果。之后在前台重新运行了一次，这是本批次唯一一份有效的审查结果。
+
+## 结论（批次 T-04）
+
+P0/P1 已全部修复（本批次无 P0/P1）

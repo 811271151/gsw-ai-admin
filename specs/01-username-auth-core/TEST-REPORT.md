@@ -62,3 +62,19 @@
 ### 结论
 
 通过（3/3）
+
+---
+
+## 批次 3：T-04（2026-10-30）
+
+T-04 只配置测试基础设施，requirement.md 里没有对应的 AC。本批次只验证配置本身能用。
+
+### 套件结果
+
+- `pnpm install --frozen-lockfile --offline`：✅ lockfile 与各 package.json 一致
+- `pnpm test`（`turbo run test`）：✅ 退出码 0，2/2 个任务成功（`@gsw-ai-admin/auth`、`server`）。两个包都还没有测试文件，`--passWithNoTests` 让它们正常退出
+- `vitest --version`：5.0.5
+
+### 结论
+
+通过（配置验证 3/3）

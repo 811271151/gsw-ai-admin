@@ -120,6 +120,7 @@ gsw-ai-admin/
 - **@trpc/tanstack-react-query** - tRPC + React Query 集成
 
 ### 开发体验
+- **Vitest 5.0.5** - 单元测试与服务端集成测试（pnpm catalog）
 - **Biome 2.5.15** - 快速的代码检查和格式化（通过 Ultracite）
 - **Ultracite 8.0.0** - 零配置代码质量预设
 - **Varlock 1.23.0** - 类型安全的环境变量与代码生成
@@ -199,6 +200,7 @@ pnpm run db:studio        # 打开 Prisma Studio
 pnpm run check            # 运行 Biome 检查
 pnpm run fix              # 自动修复问题
 pnpm run check-types      # TypeScript 类型检查
+pnpm test                 # 运行全部测试（Vitest，经 turbo）
 ```
 
 ### Auth Schema 同步
@@ -366,3 +368,17 @@ Biome 会自动捕获大多数机械问题。将注意力集中在：
 - 注册、登录表单统一用 `@gsw-ai-admin/auth/schemas` 的 `signUpSchema` / `signInSchema`，Web 和移动端都不要另写校验规则
 - 认证接口返回的错误码统一用 `getAuthErrorMessage(error.code, 默认文案)` 转成中文；遇到新的错误码就加进 `AUTH_ERROR_MESSAGES`，不在组件里写死
 - 注册请求的 email 取 `value.email.trim() || toPlaceholderEmail(value.username)`；`@users.local` 域名只给占位邮箱用，`signUpSchema` 会拒绝用户手填这个域名
+
+### 01-username-auth-core（批次 T-04）— 2026-10-30
+
+**踩坑**
+- `pnpm add` 在 Windows 上一直没有输出、也不结束 → 后台还有 `pnpm run dev`（tsx watch）在跑，占用着 node_modules 里的文件 → 装依赖前先停掉所有 dev 服务；停的时候用 `taskkill /T` 结束整个进程树，只杀监听端口的子进程会被 tsx watch 重新拉起来
+- `pnpm add --save-catalog` 会把 `pnpm-workspace.yaml` 的键全部按字母重排 → 提交前改回原来的顺序，只保留新增的那一行
+- 本机访问 npm registry 慢，偶尔出现 ECONNRESET → 安装多等一会，pnpm 会自动重试
+
+**约定**
+- 测试命令：根目录 `pnpm test`（`turbo run test`，不缓存，因为集成测试依赖数据库状态）；各包的 `test` 脚本是 `vitest run --passWithNoTests`
+- 新的包要加测试时，执行 `pnpm add -D vitest --filter <包名>`（版本取 catalog），再加同样的 `test` 脚本
+
+**新依赖**
+- `vitest` ^5.0.5（pnpm catalog）— 单元测试和服务端集成测试，目前用在 `packages/auth`、`apps/server`
