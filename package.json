@@ -23,7 +23,7 @@
     "check": "ultracite check",
     "fix": "ultracite fix",
     "test": "turbo run test",
-    "test:e2e": "turbo run test:e2e"
+    "test:e2e": "turbo run test:e2e --concurrency=1"
   },
   "dependencies": {
     "zod": "catalog:"

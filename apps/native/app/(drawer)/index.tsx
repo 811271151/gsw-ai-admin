@@ -29,7 +29,7 @@ const getConnectionState = (
 };
 
 export default function Home() {
-	const { data: session, isPending } = authClient.useSession();
+	const { data: session, isPending, isRefetching } = authClient.useSession();
 	const isSignedIn = Boolean(session?.user);
 	const healthCheck = useQuery(trpc.healthCheck.queryOptions());
 	// 未登录时这个接口必然 401，等确认登录后再请求
@@ -58,7 +58,9 @@ export default function Home() {
 		// 不手动跳转：会话变为 null 后本页重新渲染，由下面的 <Redirect> 回到登录屏幕
 	}, []);
 
-	if (isPending) {
+	// 会话加载完一次之后，Better Auth 再次拉取时 isPending 不会再变成 true，只有 isRefetching 为 true。
+	// 没有用户但正在拉取时也要等，否则会把「还没拉到」当成「未登录」
+	if (isPending || (isRefetching && !session?.user)) {
 		return (
 			<Container className="items-center justify-center" isScrollable={false}>
 				<Spinner />

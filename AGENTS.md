@@ -202,7 +202,7 @@ pnpm run check            # 运行 Biome 检查
 pnpm run fix              # 自动修复问题
 pnpm run check-types      # TypeScript 类型检查
 pnpm test                 # 运行全部单元/集成测试（Vitest，经 turbo）
-pnpm test:e2e             # 运行 Web E2E（Playwright，需本地 PostgreSQL，自动启动 3000/3001）
+pnpm test:e2e             # 依次运行 Web E2E 与移动端 Web E2E（Playwright，需本地 PostgreSQL，自动启动 3000/3001）
 ```
 
 ### Auth Schema 同步
@@ -497,3 +497,21 @@ Biome 会自动捕获大多数机械问题。将注意力集中在：
 - 移动端的登录守卫写在页面里：`useSession()` 加载时显示 Spinner，没有 `session.user` 时返回 `<Redirect href="/login" />`。登出后不用手动跳转，会话变为 null 后页面重新渲染，`<Redirect>` 会自动跳走
 - 需要登录的 tRPC 查询加 `enabled: Boolean(session?.user)`，未登录时不发请求，避免必然的 401
 - 移动端显示用户名用 `lib/display-name.ts` 的 `getDisplayName`（规则和 Web 一致），不显示 email
+
+### 03-native-username-auth（批次 T-05）— 2026-10-31 · feature 完成
+
+**踩坑**
+- **登录竞态**：Better Auth 登录接口返回后，会话原子里还是旧的 null，要等 `$sessionSignal` 异步重新拉取。会话加载过一次之后，再拉取时 `isPending` 不会变成 true，只有 `isRefetching` 为 true。登录后立刻跳到受保护页面，守卫会把「还没拉到」当成「未登录」，把人送回登录页 → 登录成功后先 `await useSession().refetch()` 再跳转；守卫写成 `isPending || (isRefetching && !session?.user)` 时等待。Web 端（Next）走 SSR 的 `getServerSession`，不受影响
+- heroui-native 的 toast 在 Web 上会在 DOM 里渲染两份同样的文本 → E2E 用 `getByText(...).first()`
+- react-native-web 不会把 `Label` 关联到输入框（没有 `aria-label` / `id`）→ E2E 按 placeholder 定位
+- Playwright `webServer.url` 只看 HTTP 状态，换成别的服务占着端口也会被当成「已就绪」→ Expo 用 Metro 独有的 `/status`（返回 `packager-status:running`；Next 返回 404）
+- 单条用例的默认超时是 30s，会盖过 locator 自己设的更长等待 → 需要等 Metro 首包时，在配置里把 `timeout` 调大
+- 登录屏幕对已登录用户也会照常渲染，所以「停在 /login」不能证明已经登出 → 要重新打开受保护页面，看守卫有没有把人送回登录页
+- `expo export` 偶尔在导出完成后以 Segmentation fault（139）退出：看日志里有没有「Exported」，重跑一次即可
+
+**约定**
+- 移动端 E2E：`apps/native/e2e/*.e2e.ts`，在 Expo Web（`expo start --web --port 3001`）上跑，单 worker，单条用例超时 120s。只能用 3001（服务端 CORS 只放行这个端口），所以根目录 `pnpm test:e2e` 是 `turbo run test:e2e --concurrency=1`，Web 和移动端两套依次跑
+- 依赖 SecureStore、原生键盘、App 重启的 AC，Web 上只能近似验证，要在报告里写明「设备未执行」
+
+**新依赖**
+- `@playwright/test` ^1.64.1（`apps/native` 开发依赖）— 移动端 Web E2E

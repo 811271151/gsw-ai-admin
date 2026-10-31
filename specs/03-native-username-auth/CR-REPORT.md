@@ -71,3 +71,35 @@ P0 x0 / P1 x0 / P2 x0。Codex 结论：受保护的接口只在登录后请求�
 ## 结论（批次 T-04）
 
 P0/P1 已全部修复（本批次无 P0/P1）
+
+---
+
+## 批次 T-05 · Codex 意见（2026-10-31）
+
+范围：working tree。包括移动端 Web E2E（`apps/native/e2e/`、`playwright.config.ts`）、依赖与脚本，以及 E2E 发现的登录竞态修复（`components/sign-in.tsx`、`app/(drawer)/index.tsx`）
+
+验收方式（用户 2026-10-31 选择）：本机没有可用设备，在 Expo Web 上运行同一套组件替代设备验收。必须依赖原生行为的 AC 只做 Web 近似验证，并列为遗留问题。
+
+E2E 在送审前发现并修复了一个产品 bug（W4a 自查，不是 Codex 提的）：
+- 现象：用户名、密码正确，登录后跳到首页，约 20ms 后又被送回登录屏幕
+- 原因：登录接口返回后，Better Auth 的会话原子还是旧值 null，它通过 `$sessionSignal` 异步重新拉取。会话加载过一次之后，再次拉取时 `isPending` 不会变成 true，只有 `isRefetching` 为 true。首页的登录守卫看到「没有用户、也不在 pending」就跳回 `/login`。真机上的流程完全一样（expoClient 也是先 notify 再异步拉取），所以这是真 bug，不是 Web 才有的问题
+- 修复（两处，互为保险）：
+  - `sign-in.tsx`：登录成功后先 `await refetchSession()`（`useSession().refetch`，与信号触发的拉取共用同一次请求），会话到手后再跳转
+  - `(drawer)/index.tsx`：`isPending || (isRefetching && !session?.user)` 时显示 Spinner，不把「还没拉到」当成「未登录」
+
+P0 x0 / P1 x0 / P2 x3
+
+- [P2] 复用已有服务前没有确认它是不是 Expo — `playwright.config.ts:33-37`
+  - 问题：3001 上如果跑着 `apps/web` 的 Next 开发服务，它的 `/login` 也返回 200。非 CI 环境下 `reuseExistingServer` 会跳过启动 Expo，结果测的是 Web 端
+  - 分类：可修复。就绪检查改用 Metro 独有的 `/status`。已实测：Expo 返回 `packager-status:running`；Next 返回 404，不会被当成可复用的服务，Playwright 会尝试自己启动，遇到端口冲突时直接报错
+- [P2] 单条用例默认 30s 超时，压不住 90s 的首包等待 — `e2e/auth.e2e.ts:14-15`
+  - 分类：可修复。配置里加 `timeout: 120_000`
+- [P2] AC-10 刷新后停在 `/login`，不能证明已经登出 — `e2e/auth.e2e.ts:180-184`
+  - 问题：登录屏幕对已登录用户也会照常渲染
+  - 分类：可修复。登出后改为重新打开受保护的首页 `/`，断言首页的登录守卫把人送回 `/login`，并且页面上没有「欢迎，{用户名}」
+
+Codex 在沙箱里跑 tsc 和 Playwright 被依赖访问权限拦住，没跑成。Claude 在本机执行 tsc、biome，以及根目录 `pnpm test:e2e`（Web 15/15、移动端 Web 11/11），全部通过。
+
+## 结论（批次 T-05）
+
+P0/P1 已全部修复（本批次无 P0/P1；P2 x3 已修复；另修复登录竞态 bug x1）

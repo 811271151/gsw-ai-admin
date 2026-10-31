@@ -45,3 +45,8 @@ uniwind-types.d.ts
 
 !.env.schema
 /src/env.ts
+
+# playwright
+/test-results
+/playwright-report
+/blob-report

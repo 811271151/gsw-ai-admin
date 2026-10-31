@@ -43,6 +43,7 @@ function SignIn() {
 	const router = useRouter();
 	const passwordInputRef = useRef<InputRef | null>(null);
 	const { toast } = useToast();
+	const { refetch: refetchSession } = authClient.useSession();
 
 	const form = useForm({
 		defaultValues: {
@@ -63,6 +64,9 @@ function SignIn() {
 					});
 					return;
 				}
+				// 先把新会话拉进 useSession 再跳转：登录接口返回后会话原子里还是 null，
+				// 直接跳首页会被首页的登录守卫当成未登录，立刻跳回登录屏幕
+				await refetchSession();
 				toast.show({ label: "登录成功", variant: "success" });
 				// 缓存里可能是未登录时拿到的数据，换了会话后要作废
 				queryClient.invalidateQueries();
